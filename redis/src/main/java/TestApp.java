@@ -24,7 +24,7 @@ import java.util.Scanner;
 public class TestApp {
   public static void main(String[] args) throws URISyntaxException, ClassNotFoundException {
 
-    String absolutePath = "/프로젝트_위치/calcite/redis/src/test/resources/redis-mix-model.json";
+    String absolutePath = "/Users/yoonji_kim/latest_calcite/redis/src/test/resources/redis-mix-model.json";
 
     // Load Calcite jdbc driver
     Class.forName("org.apache.calcite.jdbc.Driver");

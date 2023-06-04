@@ -25,8 +25,11 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Set;
 
+import redis.clients.jedis.BuilderFactory;
 import redis.clients.jedis.Jedis;
+import redis.clients.jedis.Tuple;
 
 /**
  * The class with RedisDataProcess.
@@ -44,7 +47,8 @@ public class RedisDataProcess {
   public RedisDataProcess(Jedis jedis, RedisTableFieldInfo tableFieldInfo) {
     this.jedis = jedis;
     String type = jedis.type(tableFieldInfo.getTableName());
-    fields = tableFieldInfo.getFields();
+    fields = tableFieldInfo.getFields(); // 여기서 몇개인지 함 봐야함
+    System.out.println("size : "+fields.size());
     dataFormat = tableFieldInfo.getDataFormat();
     tableName = tableFieldInfo.getTableName();
     keyDelimiter = tableFieldInfo.getKeyDelimiter();
@@ -56,7 +60,6 @@ public class RedisDataProcess {
     assert redisDataFormat != null;
     assert dataType != null;
   }
-
   public List<Object[]> read() {
     List<Object[]> objs = new ArrayList<>();
     switch (dataType) {
@@ -67,7 +70,8 @@ public class RedisDataProcess {
     case SET:
       return parse(jedis.smembers(tableName));
     case SORTED_SET:
-      return parse(jedis.zrange(tableName, 0, -1));
+      System.out.println("jedis.zrangeWithScores(tableName, 0, -1).toString() = " + jedis.zrangeWithScores(tableName,0,-1).toString());
+      return parse(jedis.zrangeWithScores(tableName, 0, -1));
     case HASH:
       return parse(jedis.hvals(tableName));
     default:
@@ -106,7 +110,34 @@ public class RedisDataProcess {
     return arr;
   }
 
+  private List<Object[]> parseTuple(String value, Double score) {
+    System.out.println("맞게 동작하니 .. ?");
+    assert StringUtils.isNotEmpty(value);
+    List<Object[]> arr = new ArrayList<>();
+    arr.add(new Object[]{value, score});
+    return arr;
+  }
+
+  List<Object[]> parse(Set<Tuple> membersAndScores) {
+    System.out.println("tuple을 처리하기");
+    List<Object[]> objs = new ArrayList<>();
+    for (Tuple memberAndScore : membersAndScores) {
+      switch (redisDataFormat) {
+      case TUPLE:
+        objs.addAll(parseTuple(memberAndScore.getElement(), memberAndScore.getScore()));
+        break;
+      default:
+        objs.add(new Object[]{memberAndScore.getElement(), memberAndScore.getScore()});
+        break;
+      }
+    }
+    return objs;
+  }
+
+
   List<Object[]> parse(Iterable<String> keys) {
+    System.out.println("여기를 들어온거지");
+    System.out.println(keys);
     List<Object[]> objs = new ArrayList<>();
     for (String key : keys) {
       if (dataType == RedisDataType.STRING) {
@@ -114,6 +145,7 @@ public class RedisDataProcess {
       }
       switch (redisDataFormat) {
       case RAW:
+        System.out.println("raw부분일까나 ?");
         objs.add(new Object[]{key});
         break;
       case JSON:
@@ -122,13 +154,15 @@ public class RedisDataProcess {
       case CSV:
         objs.add(parseCsv(key));
         break;
+//      case TUPLE:
+//        objs.add(parseTuple(key));
+//        break;
       default:
         break;
       }
     }
     return objs;
   }
-
   public List<Object[]> parse(List<String> keys) {
     List<Object[]> objs = new ArrayList<>();
     for (String key : keys) {
@@ -151,4 +185,5 @@ public class RedisDataProcess {
     }
     return objs;
   }
+
 }

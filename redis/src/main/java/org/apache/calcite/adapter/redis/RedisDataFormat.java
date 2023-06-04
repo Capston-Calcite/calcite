@@ -16,10 +16,13 @@
  */
 package org.apache.calcite.adapter.redis;
 
+import redis.clients.jedis.Tuple;
+
 /**
  * Define the data processing type of redis.
  */
 public enum RedisDataFormat {
+
   /**
    * Treat redis key and value as a string format.
    */
@@ -35,7 +38,11 @@ public enum RedisDataFormat {
    * Treat redis key and value as a json format And parse the json string
    * to get the corresponding field content.
    */
-  JSON("json");
+  JSON("json"),
+  /**
+   * Treat redis tuple format
+   */
+  TUPLE("tuple");
 
   private final String typeName;
 
