@@ -25,8 +25,10 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Set;
 
 import redis.clients.jedis.Jedis;
+import redis.clients.jedis.Tuple;
 
 /**
  * The class with RedisDataProcess.
@@ -67,7 +69,7 @@ public class RedisDataProcess {
     case SET:
       return parse(jedis.smembers(tableName));
     case SORTED_SET:
-      return parse(jedis.zrange(tableName, 0, -1));
+      return parse(jedis.zrangeWithScores(tableName, 0, 10));
     case HASH:
       return parse(jedis.hvals(tableName));
     default:
@@ -104,6 +106,15 @@ public class RedisDataProcess {
       arr[i] = values[i] == null ? "" : values[i];
     }
     return arr;
+  }
+
+
+  List<Object[]> parse(Set<Tuple> membersAndScores) {
+    List<Object[]> objs = new ArrayList<>();
+    for (Tuple memberAndScore : membersAndScores) {
+      objs.add(new Object[]{memberAndScore.getElement(), memberAndScore.getScore()});
+    }
+    return objs;
   }
 
   List<Object[]> parse(Iterable<String> keys) {
