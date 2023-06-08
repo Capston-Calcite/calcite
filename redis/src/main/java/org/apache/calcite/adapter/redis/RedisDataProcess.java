@@ -70,7 +70,6 @@ public class RedisDataProcess {
     case SET:
       return parse(jedis.smembers(tableName));
     case SORTED_SET:
-      System.out.println(jedis.zrangeWithScores(tableName, 0, -1).toString());
       return parse(jedis.zrangeWithScores(tableName, 0, -1));
     case HASH:
       return parse(jedis.hvals(tableName));
